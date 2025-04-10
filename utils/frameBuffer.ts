@@ -2,9 +2,9 @@ import axios from "axios";
 import sharp from "sharp";
 import { Attachment } from "discord.js";
 import { spawn } from "child_process";
-import { writeFile, readFile, unlink } from "fs/promises";
+import { writeFile, readFile, mkdir } from "fs/promises";
 import path from "path";
-import os from "os";
+import { cleanUpTempFiles } from "./tempFileManager";
 
 export async function getModerationFrameBuffer(
   attachment: Attachment,
@@ -25,15 +25,15 @@ export async function getModerationFrameBuffer(
     if (isVideo) {
       console.log(`🎞️ Extracting frame from video: ${attachment.name}`);
 
-      const tempDir = os.tmpdir();
+      const tempDir = path.resolve("temp");
+      await mkdir(tempDir, { recursive: true });
+
       const inputPath = path.join(tempDir, `video-${Date.now()}.${ext}`);
       const outputPath = path.join(tempDir, `frame-${Date.now()}.jpg`);
       await writeFile(inputPath, response.data);
 
-      const ffmpegPath = "C:\\ffmpeg-7.1.1\\bin\\ffmpeg.exe";
-
       await new Promise<void>((resolve, reject) => {
-        const ffmpeg = spawn(ffmpegPath, [
+        const ffmpeg = spawn("ffmpeg", [
           "-i",
           inputPath,
           "-frames:v",
@@ -52,8 +52,7 @@ export async function getModerationFrameBuffer(
       console.log(`🎞️ Extracted frame from video: ${outputPath}`);
 
       imageBuffer = await readFile(outputPath);
-      await unlink(inputPath);
-      await unlink(outputPath);
+      await cleanUpTempFiles(inputPath, outputPath);
     } else {
       imageBuffer = Buffer.from(response.data);
     }
