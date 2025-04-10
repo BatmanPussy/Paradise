@@ -1,9 +1,26 @@
 import path from "path";
 import { Glob } from "bun";
-import { Events, type ClientEvents } from "discord.js";
+import { Collection, Events, type ClientEvents } from "discord.js";
 import { client } from "..";
+import type { Command } from "../types/command";
 
-export const loadEvents = async (pathToSearch: string) => {
+const commands = new Collection<string, Command>();
+
+const loadCommands = async (pathToSearch: string) => {
+  const commandsGlob = new Glob(pathToSearch);
+
+  for await (const file of commandsGlob.scan(".")) {
+    const filePath = path.resolve(process.cwd(), file);
+    const { data, execute } = await import(filePath).then((m) => m.default);
+
+    if (!data || !execute)
+      throw new Error(`Missing data or execute function in ${file}`);
+
+    commands.set(data.name, { data, execute });
+  }
+};
+
+const loadEvents = async (pathToSearch: string) => {
   const eventsGlob = new Glob(pathToSearch);
 
   for await (const file of eventsGlob.scan(".")) {
@@ -32,3 +49,5 @@ export const loadEvents = async (pathToSearch: string) => {
     }
   }
 };
+
+export { loadCommands, loadEvents, commands };

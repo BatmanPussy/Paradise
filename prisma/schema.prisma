@@ -1,0 +1,37 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Guild {
+  id        String   @id @default(cuid())
+  guildId   String   @unique
+  createdAt DateTime @default(now())
+  updateAt  DateTime @updatedAt
+}
+
+model Logging {
+  id        String   @id @default(cuid())
+  guildId   String
+  channelId String
+  enabled   Boolean
+  createdAt DateTime @default(now())
+  updateAt  DateTime @updatedAt
+}
+
+model EnabledChannels {
+  id        String   @id @default(cuid())
+  guildId   String
+  channelId String
+  enabled   Boolean
+  keywords  String
+  createdAt DateTime @default(now())
+  updateAt  DateTime @updatedAt
+}
